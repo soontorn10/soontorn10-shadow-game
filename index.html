@@ -18,7 +18,7 @@
         <div id="view-code" class="space-y-6">
             <h1 class="text-2xl font-bold text-indigo-400">🎭 เกมเงาปริศนา</h1>
             <p class="text-slate-400 text-sm">🔐 กรุณากรอกรหัสเข้าใช้งานที่คุณครูแจ้ง</p>
-            <input type="number" id="roomCode" placeholder="รหัสห้องเรียน (เช่น 30 หรือ 40)" class="w-full p-4 rounded-xl bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center text-lg">
+            <input type="number" id="roomCode" placeholder="กรอกรหัสเข้าใช้งาน" class="w-full p-4 rounded-xl bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center text-lg">
             <div id="codeError" class="text-red-400 text-sm hidden"></div>
             <button onclick="checkCode()" class="w-full py-4 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/30">🚀 เข้าสู่ระบบ</button>
         </div>
@@ -66,12 +66,12 @@
             }
         };
 
-        // ตำแหน่งไฟล์ภาพในโฟลเดอร์ images/ สำหรับใช้งานบน GitHub Pages
+        // ตำแหน่งไฟล์ภาพในโฟลเดอร์ images/ บน GitHub (ตรงตามชื่อไฟล์ .png.png ที่อัปโหลดจริง)
         const IMAGES = {
-            1: "images/jakeh.png",        // ดีด: จะเข้
-            2: "images/saw-u.png",        // สี: ซออู้
-            3: "images/ranat-thum.png",   // ตี: ระนาดทุ้ม
-            4: "images/khlui.png"         // เป่า: ขลุ่ย
+            1: "images/jakeh.png.png",        // ดีด: จะเข้
+            2: "images/saw-u.png.png",        // สี: ซออู้
+            3: "images/ranat-thum.png.png",   // ตี: ระนาดทุ้ม
+            4: "images/khlui.png.png"         // เป่า: ขลุ่ย
         };
 
         let currentCode = "";
@@ -104,7 +104,7 @@
                 document.getElementById('view-student').classList.remove('hidden-section');
                 document.getElementById('studentNo').focus();
             } else {
-                errorDiv.innerText = "❌ รหัสเข้าใช้งานไม่ถูกต้อง (กรุณาใช้ 30 หรือ 40)";
+                errorDiv.innerText = "❌ รหัสเข้าใช้งานไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
                 errorDiv.classList.remove('hidden');
             }
         }

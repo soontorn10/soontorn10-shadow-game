@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมเงาปริศนา - ดนตรีไทย</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .hidden-section { display: none; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-md bg-slate-800 rounded-3xl shadow-2xl p-8 text-center border border-slate-700">
+
+        <!-- View 1: รหัสเข้าใช้งานห้องเรียน -->
+        <div id="view-code" class="space-y-6">
+            <h1 class="text-2xl font-bold text-indigo-400">🎭 เกมเงาปริศนา</h1>
+            <p class="text-slate-400 text-sm">🔐 กรุณากรอกรหัสเข้าใช้งานที่คุณครูแจ้ง</p>
+            <input type="number" id="roomCode" placeholder="รหัสห้องเรียน (เช่น 30 หรือ 40)" class="w-full p-4 rounded-xl bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center text-lg">
+            <div id="codeError" class="text-red-400 text-sm hidden"></div>
+            <button onclick="checkCode()" class="w-full py-4 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/30">🚀 เข้าสู่ระบบ</button>
+        </div>
+
+        <!-- View 2: กรอกเลขที่นักเรียน -->
+        <div id="view-student" class="hidden-section space-y-6">
+            <h2 class="text-xl font-semibold">🎉 ยินดีต้อนรับนักเรียน</h2>
+            <p id="instructionText" class="text-slate-400 text-sm">📝 กรุณากรอกเลขที่ของคุณเพื่อรับเงาปริศนา</p>
+            <input type="number" id="studentNo" placeholder="เลขที่ของคุณ" class="w-full p-4 rounded-xl bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center text-lg">
+            <div id="studentError" class="text-red-400 text-sm hidden"></div>
+            <button id="btnGetResult" onclick="getResult()" class="w-full py-4 bg-emerald-600 rounded-xl font-bold hover:bg-emerald-500 transition shadow-lg shadow-emerald-600/30">🎁 รับเงาของฉัน</button>
+        </div>
+
+        <!-- View 3: ผลลัพธ์เงาปริศนา -->
+        <div id="view-result" class="hidden-section space-y-6">
+            <h2 class="text-xl font-bold text-emerald-400">✨ เงาปริศนาของคุณคือ</h2>
+
+            <div id="image-container" class="w-full h-80 bg-slate-700/60 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-600 relative">
+                <div id="loading-spinner" class="hidden flex flex-col items-center">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-400"></div>
+                    <p class="mt-3 text-sm text-slate-300">🔍 กำลังดึงภาพเงาปริศนา...</p>
+                </div>
+            </div>
+
+            <p class="text-sm text-amber-300 font-medium">🤫 เก็บคำตอบไว้ในใจ แล้วรอคุณครูเฉลยพร้อมกันในห้องเรียน!</p>
+            <button onclick="location.reload()" class="w-full py-3 bg-slate-700 rounded-xl hover:bg-slate-600 transition font-medium">🔄 เริ่มใหม่ / เข้าห้องอื่น</button>
+        </div>
+
+    </div>
+
+    <script>
+        // MAPPING_DATA: จัดเรียงกลุ่ม 1 (ดีด), 2 (สี), 3 (ตี), 4 (เป่า)
+        const MAPPING_DATA = {
+            "30": {
+                1: [1, 6, 10, 12, 15, 17, 24],                 // ดีด (จะเข้)
+                2: [2, 9, 16, 18, 23, 25, 26],                 // สี (ซออู้)
+                3: [3, 7, 11, 14, 19, 22, 28, 30],             // ตี (ระนาดทุ้ม)
+                4: [4, 5, 8, 13, 20, 21, 27, 29]              // เป่า (ขลุ่ย)
+            },
+            "40": {
+                1: [1, 6, 10, 12, 15, 17, 24, 32, 33, 37],     // ดีด (จะเข้)
+                2: [2, 9, 16, 18, 23, 25, 26, 31, 34, 38],     // สี (ซออู้)
+                3: [3, 7, 11, 14, 19, 22, 28, 30, 36, 40],     // ตี (ระนาดทุ้ม)
+                4: [4, 5, 8, 13, 20, 21, 27, 29, 35, 39]      // เป่า (ขลุ่ย)
+            }
+        };
+
+        // ตำแหน่งไฟล์ภาพในโฟลเดอร์ images/ สำหรับใช้งานบน GitHub Pages
+        const IMAGES = {
+            1: "images/jakeh.png",        // ดีด: จะเข้
+            2: "images/saw-u.png",        // สี: ซออู้
+            3: "images/ranat-thum.png",   // ตี: ระนาดทุ้ม
+            4: "images/khlui.png"         // เป่า: ขลุ่ย
+        };
+
+        let currentCode = "";
+
+        // ซ่อนข้อความแจ้งเตือนเมื่อเริ่มพิมพ์ใหม่
+        document.getElementById('roomCode').addEventListener('input', () => {
+            document.getElementById('codeError').classList.add('hidden');
+        });
+        document.getElementById('studentNo').addEventListener('input', () => {
+            document.getElementById('studentError').classList.add('hidden');
+        });
+
+        // รองรับการกดปุ่ม Enter
+        document.getElementById('roomCode').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') checkCode();
+        });
+        document.getElementById('studentNo').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') getResult();
+        });
+
+        function checkCode() {
+            const codeInput = document.getElementById('roomCode');
+            const errorDiv = document.getElementById('codeError');
+            const code = codeInput.value.trim();
+
+            if (MAPPING_DATA[code]) {
+                currentCode = code;
+                errorDiv.classList.add('hidden');
+                document.getElementById('view-code').classList.add('hidden-section');
+                document.getElementById('view-student').classList.remove('hidden-section');
+                document.getElementById('studentNo').focus();
+            } else {
+                errorDiv.innerText = "❌ รหัสเข้าใช้งานไม่ถูกต้อง (กรุณาใช้ 30 หรือ 40)";
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function getResult() {
+            const sNo = parseInt(document.getElementById('studentNo').value);
+            const errorDiv = document.getElementById('studentError');
+            const limit = parseInt(currentCode);
+
+            if (isNaN(sNo) || sNo < 1 || sNo > limit) {
+                errorDiv.innerText = `⚠️ กรุณากรอกเลขที่ระหว่าง 1 ถึง ${limit}`;
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            errorDiv.classList.add('hidden');
+
+            const mapping = MAPPING_DATA[currentCode];
+            let foundGroup = null;
+
+            for (let g = 1; g <= 4; g++) {
+                if (mapping[g].includes(sNo)) {
+                    foundGroup = g;
+                    break;
+                }
+            }
+
+            if (foundGroup) {
+                document.getElementById('view-student').classList.add('hidden-section');
+                document.getElementById('view-result').classList.remove('hidden-section');
+
+                const container = document.getElementById('image-container');
+                const spinner = document.getElementById('loading-spinner');
+
+                container.innerHTML = "";
+                container.appendChild(spinner);
+                spinner.classList.remove('hidden');
+
+                const img = new Image();
+                img.src = IMAGES[foundGroup];
+
+                img.onload = () => {
+                    spinner.classList.add('hidden');
+                    container.innerHTML = `<img src="${img.src}" alt="เงาปริศนา" class="h-full w-full object-contain p-2 transition-transform duration-300 hover:scale-105">`;
+                };
+
+                img.onerror = () => {
+                    spinner.classList.add('hidden');
+                    container.innerHTML = `
+                        <div class="p-4 text-center">
+                            <p class="text-red-400 font-medium">⚠️ ไม่สามารถโหลดภาพได้</p>
+                            <p class="text-xs text-slate-400 mt-1">โปรดตรวจสอบว่ามีไฟล์ในโฟลเดอร์ images/ ถูกต้องหรือไม่</p>
+                        </div>
+                    `;
+                };
+            } else {
+                errorDiv.innerText = "⚠️ ไม่พบเลขที่ในระบบ กรุณาตรวจสอบอีกครั้ง";
+                errorDiv.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
